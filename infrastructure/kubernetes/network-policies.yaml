@@ -1,0 +1,232 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny-all
+  namespace: blacksentinel-forge
+  labels:
+    app: blacksentinel
+    component: network
+spec:
+  podSelector: {}
+  policyTypes:
+    - Ingress
+    - Egress
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-dns
+  namespace: blacksentinel-forge
+  labels:
+    app: blacksentinel
+    component: network
+spec:
+  podSelector: {}
+  policyTypes:
+    - Egress
+  egress:
+    - to: []
+      ports:
+        - protocol: UDP
+          port: 53
+        - protocol: TCP
+          port: 53
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-web-to-api-gateway
+  namespace: blacksentinel-forge
+  labels:
+    app: blacksentinel
+    component: network
+spec:
+  podSelector:
+    matchLabels:
+      component: api-gateway
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              component: web
+      ports:
+        - protocol: TCP
+          port: 8080
+    - from:
+        - namespaceSelector: {}
+      ports:
+        - protocol: TCP
+          port: 8080
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-api-gateway-to-workflow-engine
+  namespace: blacksentinel-forge
+  labels:
+    app: blacksentinel
+    component: network
+spec:
+  podSelector:
+    matchLabels:
+      component: workflow-engine
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              component: api-gateway
+      ports:
+        - protocol: TCP
+          port: 8081
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-api-gateway-to-ai-engine
+  namespace: blacksentinel-forge
+  labels:
+    app: blacksentinel
+    component: network
+spec:
+  podSelector:
+    matchLabels:
+      component: ai-engine
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              component: api-gateway
+      ports:
+        - protocol: TCP
+          port: 8082
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-engines-to-databases
+  namespace: blacksentinel-forge
+  labels:
+    app: blacksentinel
+    component: network
+spec:
+  podSelector:
+    matchLabels:
+      component: database
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              component: api-gateway
+        - podSelector:
+            matchLabels:
+              component: workflow-engine
+        - podSelector:
+            matchLabels:
+              component: ai-engine
+      ports:
+        - protocol: TCP
+          port: 5432
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-engines-to-redis
+  namespace: blacksentinel-forge
+  labels:
+    app: blacksentinel
+    component: network
+spec:
+  podSelector:
+    matchLabels:
+      component: cache
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              component: api-gateway
+        - podSelector:
+            matchLabels:
+              component: workflow-engine
+        - podSelector:
+            matchLabels:
+              component: ai-engine
+      ports:
+        - protocol: TCP
+          port: 6379
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-api-gateway-egress
+  namespace: blacksentinel-forge
+  labels:
+    app: blacksentinel
+    component: network
+spec:
+  podSelector:
+    matchLabels:
+      component: api-gateway
+  policyTypes:
+    - Egress
+  egress:
+    - to:
+        - podSelector:
+            matchLabels:
+              component: database
+      ports:
+        - protocol: TCP
+          port: 5432
+    - to:
+        - podSelector:
+            matchLabels:
+              component: cache
+      ports:
+        - protocol: TCP
+          port: 6379
+    - to:
+        - podSelector:
+            matchLabels:
+              component: workflow-engine
+      ports:
+        - protocol: TCP
+          port: 8081
+    - to:
+        - podSelector:
+            matchLabels:
+              component: ai-engine
+      ports:
+        - protocol: TCP
+          port: 8082
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-web-egress
+  namespace: blacksentinel-forge
+  labels:
+    app: blacksentinel
+    component: network
+spec:
+  podSelector:
+    matchLabels:
+      component: web
+  policyTypes:
+    - Egress
+  egress:
+    - to:
+        - podSelector:
+            matchLabels:
+              component: api-gateway
+      ports:
+        - protocol: TCP
+          port: 8080

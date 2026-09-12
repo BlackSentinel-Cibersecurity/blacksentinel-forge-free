@@ -1,0 +1,28 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["esnext"],
+    "module": "commonjs",
+    "outDir": "./dist",
+    "rootDir": ".",
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "resolveJsonModule": true,
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true,
+    "paths": {
+      "@blacksentinel/shared": ["./packages/shared/src"],
+      "@blacksentinel/workflow-engine": ["./services/workflow-engine/src"],
+      "@blacksentinel/event-bus": ["./services/event-bus/src"],
+      "@blacksentinel/connector-service": ["./services/connector-service/src"]
+    }
+  },
+  "include": [
+    "packages/*/src/**/*",
+    "services/*/src/**/*"
+  ],
+  "exclude": ["node_modules", "dist", "apps"]
+}

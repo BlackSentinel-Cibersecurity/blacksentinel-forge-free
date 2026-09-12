@@ -1,0 +1,51 @@
+{
+  "name": "blacksentinel-forge",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Autonomous Security Automation & Orchestration Platform",
+  "workspaces": [
+    "packages/*",
+    "apps/*",
+    "services/*"
+  ],
+  "scripts": {
+    "dev": "concurrently \"npm run dev:api\" \"npm run dev:engine\" \"npm run dev:web\"",
+    "dev:web": "npm run dev --workspace=apps/web",
+    "dev:api": "npm run dev --workspace=services/api-gateway",
+    "dev:engine": "npm run dev --workspace=services/workflow-engine",
+    "dev:event-bus": "npm run dev --workspace=services/event-bus",
+    "dev:connector": "npm run dev --workspace=services/connector-service",
+    "build": "npm run build --workspaces",
+    "build:web": "npm run build --workspace=apps/web",
+    "build:api": "npm run build --workspace=services/api-gateway",
+    "build:engine": "npm run build --workspace=services/workflow-engine",
+    "build:event-bus": "npm run build --workspace=services/event-bus",
+    "build:connector": "npm run build --workspace=services/connector-service",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "lint": "eslint . --ext .ts,.tsx",
+    "lint:fix": "eslint . --ext .ts,.tsx --fix",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "typecheck": "tsc --noEmit",
+    "db:migrate": "npm run migrate --workspace=services/api-gateway",
+    "db:seed": "npm run seed --workspace=services/api-gateway",
+    "docker:up": "docker-compose up -d",
+    "docker:down": "docker-compose down",
+    "docker:build": "docker-compose build",
+    "clean": "rm -rf node_modules packages/*/node_modules services/*/node_modules apps/*/node_modules",
+    "clean:build": "rm -rf packages/*/dist services/*/dist apps/web/.next apps/web/out"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "concurrently": "^8.2.2",
+    "eslint": "^8.56.0",
+    "eslint-config-prettier": "^9.1.0",
+    "prettier": "^3.2.4",
+    "typescript": "^5.3.3",
+    "vitest": "^1.6.1"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}

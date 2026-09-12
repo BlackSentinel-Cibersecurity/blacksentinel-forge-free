@@ -1,0 +1,315 @@
+// ============================================================================
+// BlackSentinel Forge - Prisma Schema
+// ============================================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ---------------------------------------------------------------------------
+// Multi-Tenant
+// ---------------------------------------------------------------------------
+
+model Tenant {
+  id        String   @id @default(uuid())
+  name      String
+  plan      String   @default("free") // free | pro | enterprise
+  settings  Json     @default("{}")
+  quotas    Json     @default("{}")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  users       User[]
+  workflows   Workflow[]
+  executions  WorkflowExecution[]
+  connectors  ConnectorInstance[]
+  secrets     Secret[]
+  approvals   ApprovalRequest[]
+  events      ForgeEvent[]
+  playbooks   Playbook[]
+  auditLogs   AuditLog[]
+}
+
+// ---------------------------------------------------------------------------
+// Users & Auth
+// ---------------------------------------------------------------------------
+
+model User {
+  id           String   @id @default(uuid())
+  tenantId     String
+  tenant       Tenant   @relation(fields: [tenantId], references: [id])
+  email        String   @unique
+  name         String
+  passwordHash String
+  role         String   @default("analyst") // admin | operator | analyst | viewer | approver
+  permissions  Json     @default("[]")
+  mfaEnabled   Boolean  @default(false)
+  ssoProvider  String?
+  avatarUrl    String?
+  status       String   @default("active") // active | disabled | locked
+  lastLoginAt  DateTime?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  workflows      Workflow[]           @relation("WorkflowCreator")
+  // No `executions`/`approvals` back-relation here: WorkflowExecution.executedBy
+  // and ApprovalRequest.assignedTo are plain strings, not real FKs (executedBy
+  // can hold the sentinel "system", and assignedTo is a multi-user array), so
+  // there's no well-defined single-column relation to hang "ExecutionActor" /
+  // "ApprovalAssignee" on. These named relations were declared here with no
+  // matching field ever added on the other model — a genuine pre-existing
+  // schema bug that made `prisma generate` fail outright. Removed rather than
+  // inventing a relational shape (e.g. forcing "system" into a real user row)
+  // that isn't backed by the actual product design.
+  approvalEntries ApprovalEntry[]
+  auditLogs      AuditLog[]
+  secrets        Secret[]             @relation("SecretCreator")
+
+  @@index([tenantId])
+  @@index([email])
+}
+
+// ---------------------------------------------------------------------------
+// Workflows
+// ---------------------------------------------------------------------------
+
+model Workflow {
+  id           String   @id @default(uuid())
+  tenantId     String
+  tenant       Tenant   @relation(fields: [tenantId], references: [id])
+  name         String
+  description  String   @default("")
+  version      Int      @default(1)
+  status       String   @default("draft") // draft | active | paused | archived | deleted
+  nodes        Json     @default("[]")
+  edges        Json     @default("[]")
+  variables    Json     @default("[]")
+  triggers     Json     @default("[]")
+  category     String   @default("custom")
+  riskLevel    String   @default("low") // critical | high | medium | low | none
+  tags         String[]
+  isTemplate   Boolean  @default(false)
+  folderId     String?
+  requiredApprovals Int @default(0)
+  createdBy    String
+  creator      User     @relation("WorkflowCreator", fields: [createdBy], references: [id])
+  updatedBy    String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  executions WorkflowExecution[]
+
+  @@index([tenantId])
+  @@index([status])
+  @@index([category])
+}
+
+// ---------------------------------------------------------------------------
+// Executions
+// ---------------------------------------------------------------------------
+
+model WorkflowExecution {
+  id                String   @id @default(uuid())
+  tenantId          String
+  tenant            Tenant   @relation(fields: [tenantId], references: [id])
+  workflowId        String
+  workflow          Workflow @relation(fields: [workflowId], references: [id])
+  workflowVersion   Int      @default(1)
+  status            String   @default("pending") // pending | running | paused | waiting-approval | completed | failed | cancelled | timeout | error
+  trigger           String   @default("manual")
+  triggerData       Json     @default("{}")
+  inputData         Json     @default("{}")
+  outputData        Json?
+  nodeExecutions    Json     @default("[]")
+  startedAt         DateTime @default(now())
+  completedAt       DateTime?
+  duration          Int?     // milliseconds
+  error             Json?
+  correlationId     String
+  parentExecutionId String?
+  tags              String[]
+  executedBy        String   @default("system")
+  retryOf           String?
+
+  approvals ApprovalRequest[]
+
+  @@index([tenantId])
+  @@index([workflowId])
+  @@index([status])
+  @@index([correlationId])
+}
+
+model ApprovalEntry {
+  id              String           @id @default(uuid())
+  approvalId      String
+  approval        ApprovalRequest  @relation(fields: [approvalId], references: [id])
+  userId          String
+  user            User             @relation(fields: [userId], references: [id])
+  status          String           @default("pending") // pending | approved | rejected | expired | delegated | cancelled
+  comment         String?
+  timestamp       DateTime?
+  delegatedTo     String?
+  createdAt       DateTime         @default(now())
+
+  @@index([approvalId])
+  @@index([userId])
+}
+
+// ---------------------------------------------------------------------------
+// Approvals
+// ---------------------------------------------------------------------------
+
+model ApprovalRequest {
+  id            String             @id @default(uuid())
+  tenantId      String
+  tenant        Tenant             @relation(fields: [tenantId], references: [id])
+  executionId   String
+  execution     WorkflowExecution  @relation(fields: [executionId], references: [id])
+  nodeId        String
+  workflowId    String
+  type          String             @default("single") // single | multi-level | parallel | consensus | conditional
+  title         String
+  description   String             @default("")
+  riskLevel     String             @default("low")
+  status        String             @default("pending") // pending | approved | rejected | expired | delegated | cancelled
+  requestedBy   String
+  metadata      Json               @default("{}")
+  expiresAt     DateTime
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
+
+  approvers ApprovalEntry[]
+
+  @@index([tenantId])
+  @@index([status])
+  @@index([executionId])
+}
+
+// ---------------------------------------------------------------------------
+// Connectors
+// ---------------------------------------------------------------------------
+
+model ConnectorInstance {
+  id           String   @id @default(uuid())
+  tenantId     String
+  tenant       Tenant   @relation(fields: [tenantId], references: [id])
+  connectorId  String
+  name         String
+  config       Json     @default("{}")
+  secrets      String[]
+  status       String   @default("disconnected") // connected | disconnected | error
+  lastSyncAt   DateTime?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([tenantId])
+  @@index([connectorId])
+}
+
+// ---------------------------------------------------------------------------
+// Secrets
+// ---------------------------------------------------------------------------
+
+model Secret {
+  id           String   @id @default(uuid())
+  tenantId     String
+  tenant       Tenant   @relation(fields: [tenantId], references: [id])
+  name         String
+  path         String
+  type         String   @default("generic") // api-key | password | certificate | token | ssh-key | generic
+  lastRotatedAt DateTime @default(now())
+  expiresAt    DateTime?
+  rotationPolicy Json?
+  accessPolicy  Json    @default("{}")
+  tags         String[]
+  createdBy    String
+  creator      User     @relation("SecretCreator", fields: [createdBy], references: [id])
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([tenantId])
+  @@index([path])
+}
+
+// ---------------------------------------------------------------------------
+// Events
+// ---------------------------------------------------------------------------
+
+model ForgeEvent {
+  id           String   @id @default(uuid())
+  tenantId     String
+  tenant       Tenant   @relation(fields: [tenantId], references: [id])
+  source       String
+  type         String
+  data         Json     @default("{}")
+  metadata     Json     @default("{}")
+  processed    Boolean  @default(false)
+  timestamp    DateTime @default(now())
+
+  @@index([tenantId])
+  @@index([type])
+  @@index([processed])
+  @@index([timestamp])
+}
+
+// ---------------------------------------------------------------------------
+// Playbooks
+// ---------------------------------------------------------------------------
+
+model Playbook {
+  id               String   @id @default(uuid())
+  tenantId         String
+  tenant           Tenant   @relation(fields: [tenantId], references: [id])
+  name             String
+  description      String
+  category         String
+  difficulty       String   @default("intermediate")
+  tags             String[]
+  workflowTemplate Json     @default("{}")
+  inputs           Json     @default("[]")
+  outputs          Json     @default("[]")
+  dependencies     String[]
+  risks            String[]
+  validations      String[]
+  metrics          Json     @default("{}")
+  author           String
+  version          String   @default("1.0.0")
+  rating           Float    @default(0)
+  installCount     Int      @default(0)
+  isOfficial       Boolean  @default(false)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@index([tenantId])
+  @@index([category])
+}
+
+// ---------------------------------------------------------------------------
+// Audit Log
+// ---------------------------------------------------------------------------
+
+model AuditLog {
+  id         String   @id @default(uuid())
+  tenantId   String
+  tenant     Tenant   @relation(fields: [tenantId], references: [id])
+  userId     String?
+  user       User?    @relation(fields: [userId], references: [id])
+  action     String
+  resource   String
+  resourceId String?
+  details    Json     @default("{}")
+  ipAddress  String?
+  userAgent  String?
+  timestamp  DateTime @default(now())
+
+  @@index([tenantId])
+  @@index([userId])
+  @@index([action])
+  @@index([resource])
+  @@index([timestamp])
+}

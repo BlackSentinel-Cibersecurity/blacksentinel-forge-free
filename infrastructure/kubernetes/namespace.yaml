@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: blacksentinel-forge
+  labels:
+    app: blacksentinel
+    environment: production
+    managed-by: kubectl
+  annotations:
+    description: "BlackSentinel Forge - AI-Powered Security Platform"
