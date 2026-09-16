@@ -14,18 +14,23 @@ FROM base AS deps
 COPY package.json package-lock.json ./
 COPY packages/shared/package.json ./packages/shared/
 COPY services/api-gateway/package.json ./services/api-gateway/
-RUN npm ci --workspace=services/api-gateway --workspace=packages/shared
+# --ignore-scripts: the Prisma schema (needed by the postinstall "prisma
+# generate" step) doesn't exist in this stage yet, only package.json files do.
+RUN npm ci --ignore-scripts --workspace=services/api-gateway --workspace=packages/shared
 
 # ---------------------------------------------------------------------------
 # Builder
 # ---------------------------------------------------------------------------
 FROM base AS builder
+# npm workspaces hoists all workspace dependencies into the root
+# node_modules — there are no per-workspace node_modules directories to copy.
 COPY --from=deps /app/node_modules ./node_modules
-COPY --from=deps /app/packages/shared/node_modules ./packages/shared/node_modules
-COPY --from=deps /app/services/api-gateway/node_modules ./services/api-gateway/node_modules
+# npm needs the root package.json to resolve `--workspace=...` commands.
+COPY package.json package-lock.json ./
 COPY packages/shared ./packages/shared
 COPY services/api-gateway ./services/api-gateway
 RUN npm run build --workspace=packages/shared
+RUN npx prisma generate --schema=services/api-gateway/prisma/schema.prisma
 RUN npm run build --workspace=services/api-gateway
 
 # ---------------------------------------------------------------------------

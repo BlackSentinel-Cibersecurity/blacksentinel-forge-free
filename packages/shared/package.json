@@ -2,13 +2,17 @@
   "name": "@blacksentinel/shared",
   "version": "0.1.0",
   "private": true,
-  "main": "src/index.ts",
-  "types": "src/index.ts",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
   "scripts": {
     "typecheck": "tsc --noEmit",
     "build": "tsc"
   },
+  "dependencies": {
+    "uuid": "^9.0.0"
+  },
   "devDependencies": {
+    "@types/uuid": "^9.0.7",
     "typescript": "^5.3.3"
   }
 }

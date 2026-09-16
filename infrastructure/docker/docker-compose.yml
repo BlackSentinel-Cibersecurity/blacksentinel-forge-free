@@ -49,6 +49,7 @@ services:
     build:
       context: ../../
       dockerfile: services/api-gateway/Dockerfile
+    image: ghcr.io/blacksentinel-cibersecurity/blacksentinel-forge-free/api-gateway:latest
     container_name: forge-api-gateway
     environment:
       NODE_ENV: production
@@ -77,6 +78,7 @@ services:
     build:
       context: ../../
       dockerfile: services/workflow-engine/Dockerfile
+    image: ghcr.io/blacksentinel-cibersecurity/blacksentinel-forge-free/workflow-engine:latest
     container_name: forge-workflow-engine
     environment:
       NODE_ENV: production
@@ -99,6 +101,7 @@ services:
     build:
       context: ../../
       dockerfile: apps/web/Dockerfile
+    image: ghcr.io/blacksentinel-cibersecurity/blacksentinel-forge-free/web:latest
     container_name: forge-web
     ports:
       - "3000:3000"

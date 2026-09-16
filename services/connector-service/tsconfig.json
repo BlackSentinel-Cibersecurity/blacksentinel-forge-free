@@ -14,7 +14,7 @@
     "declarationMap": true,
     "sourceMap": true,
     "paths": {
-      "@blacksentinel/shared": ["../../packages/shared/src"]
+      "@blacksentinel/shared": ["../../packages/shared/dist"]
     }
   },
   "include": ["src/**/*"],

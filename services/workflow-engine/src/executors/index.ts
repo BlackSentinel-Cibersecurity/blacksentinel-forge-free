@@ -79,7 +79,7 @@ export class TransformExecutor implements NodeExecutor {
     input: Record<string, unknown>,
   ): Promise<Record<string, unknown>> {
     const { transformations = [] } = node.data.config;
-    let result = { ...input };
+    const result = { ...input };
 
     for (const transform of transformations as Record<string, unknown>[]) {
       switch (transform.type) {

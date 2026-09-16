@@ -95,8 +95,8 @@ describe('EventBus', () => {
   }, 15000);
 
   it('getStats returns correct counts', async () => {
-    bus.subscribe('test.event', () => {});
-    bus.subscribe('test.event', () => {});
+    bus.subscribe('test.event', async () => {});
+    bus.subscribe('test.event', async () => {});
 
     await bus.publish(makeEvent());
 

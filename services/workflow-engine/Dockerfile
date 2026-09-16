@@ -14,9 +14,11 @@ COPY services/workflow-engine/package.json ./services/workflow-engine/
 RUN npm ci --workspace=services/workflow-engine --workspace=packages/shared
 
 FROM base AS builder
+# npm workspaces hoists all workspace dependencies into the root
+# node_modules — there are no per-workspace node_modules directories to copy.
 COPY --from=deps /app/node_modules ./node_modules
-COPY --from=deps /app/packages/shared/node_modules ./packages/shared/node_modules
-COPY --from=deps /app/services/workflow-engine/node_modules ./services/workflow-engine/node_modules
+# npm needs the root package.json to resolve `--workspace=...` commands.
+COPY package.json package-lock.json ./
 COPY packages/shared ./packages/shared
 COPY services/workflow-engine ./services/workflow-engine
 RUN npm run build --workspace=packages/shared

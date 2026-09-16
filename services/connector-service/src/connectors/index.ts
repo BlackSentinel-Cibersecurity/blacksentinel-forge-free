@@ -82,12 +82,14 @@ export abstract class BaseConnector extends EventEmitter {
 // Connector Registry
 // ---------------------------------------------------------------------------
 
+type ConcreteConnectorClass = new (ctx: ConnectorContext) => BaseConnector;
+
 export class ConnectorRegistry {
-  private connectors: Map<string, typeof BaseConnector> = new Map();
+  private connectors: Map<string, ConcreteConnectorClass> = new Map();
   private instances: Map<string, BaseConnector> = new Map();
 
-  register(connectorClass: typeof BaseConnector): void {
-    const temp = new (connectorClass as new (ctx: ConnectorContext) => BaseConnector)({
+  register(connectorClass: ConcreteConnectorClass): void {
+    const temp = new connectorClass({
       instance: {} as ConnectorInstance,
       secrets: {},
       config: {},
