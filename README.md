@@ -2,7 +2,7 @@
 
 > **This is the free, limited edition.** The AI decision engine is
 > **not included in this repository's source at all** (not just
-> disabled behind a flag) — see blacksentinel.io for the full platform.
+> disabled behind a flag) — see blacksentinel.tech for the full platform.
 > Marketplace items already tagged non-free in their own data can be
 > browsed here but not installed without upgrading.
 
@@ -167,6 +167,21 @@ kubectl apply -f infrastructure/kubernetes/
 ### Environment Variables
 See `.env.example` for all required configuration.
 
+---
+
+## Before you run it
+
+- This is a **technical preview** and the open-source edition of the product. It comes with no warranty and no service-level commitment: try it in a test environment first.
+- It is **self-hosted**. BlackSentinel does not host it for you, and paid plans are not on sale.
+- Change every default credential and secret before exposing anything to a network. Never deploy with the example values from `.env.example` or `.env.production`.
+- Use it only on systems you own or are explicitly authorized to test or monitor. See the [Acceptable Use Policy](https://blacksentinel.tech/acceptable-use/).
+
+## Support
+
+- Bugs and questions: [open an issue](https://github.com/BlackSentinel-Cibersecurity/blacksentinel-forge-free/issues) in this repository.
+- Security reports: follow [security.txt](https://blacksentinel.tech/.well-known/security.txt). Please do not open a public issue for a vulnerability.
+- Everything else: BlackSentinel-tech@protonmail.com
+
 ## License
 
-Proprietary - BlackSentinel Security, Inc.
+MIT. See [LICENSE](LICENSE). The BlackSentinel name and logo are not covered by the licence.
