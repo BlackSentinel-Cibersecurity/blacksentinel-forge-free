@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import './globals.css';
+import "./blacksentinel-theme.css";
 
 export const metadata: Metadata = {
   title: 'BlackSentinel Forge - Autonomous Security Automation',
