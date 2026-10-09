@@ -83,8 +83,13 @@ This starts all services concurrently:
 
 ### Docker Quick Start
 ```bash
-docker-compose up -d
+./scripts/init-env.sh   # random JWT secret + operator password in infrastructure/docker/.env
+docker compose -f infrastructure/docker/docker-compose.yml up -d --build
 ```
+
+Sign in to the API as `admin@blacksentinel.local` with the `ADMIN_PASSWORD` that
+`init-env.sh` printed (it is also in `infrastructure/docker/.env`). There are no
+published default credentials, and self-registration is off in this edition.
 
 ## Modules
 
@@ -124,7 +129,7 @@ All API endpoints are prefixed with `/api/v1/`.
 
 | Module | Endpoint | Methods |
 |--------|----------|---------|
-| Auth | `/auth/login`, `/auth/register` | POST |
+| Auth | `/auth/login` (operator account from `.env`) | POST |
 | Workflows | `/workflows` | GET, POST, PUT, DELETE |
 | Executions | `/executions` | GET |
 | Connectors | `/connectors` | GET, POST |

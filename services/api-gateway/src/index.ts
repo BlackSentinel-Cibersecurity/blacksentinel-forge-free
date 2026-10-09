@@ -3,6 +3,7 @@
 // ============================================================================
 
 import express from 'express';
+import { jwtSecret } from './secret';
 import cors from 'cors';
 import helmet from 'helmet';
 import compression from 'compression';
@@ -162,29 +163,13 @@ export function createGateway(config: GatewayConfig): express.Application {
 // Server Startup
 // ---------------------------------------------------------------------------
 if (require.main === module) {
-  // A hardcoded fallback JWT signing secret is a real vulnerability if this
-  // ever runs in production without JWT_SECRET set: any attacker who knows
-  // the default ('dev-secret', visible in this source) can forge valid auth
-  // tokens for any tenant. Fail fast in production instead of silently
-  // signing tokens with a known-public secret; keep the fallback for local
-  // dev only, with a loud warning so it's never mistaken for a real config.
-  const jwtSecret = process.env.JWT_SECRET;
-  if (!jwtSecret) {
-    if (process.env.NODE_ENV === 'production') {
-      throw new Error(
-        'JWT_SECRET is required in production. Refusing to start with a hardcoded fallback secret.',
-      );
-    }
-    logger.warn('JWT_SECRET not set — using an insecure dev-only fallback. Do not use this outside local development.');
-  }
-
   const config: GatewayConfig = {
     port: parseInt(process.env.PORT || '8080', 10),
     host: process.env.HOST || '0.0.0.0',
     corsOrigins: (process.env.CORS_ORIGINS || 'http://localhost:3000').split(','),
     rateLimitWindow: parseInt(process.env.RATE_LIMIT_WINDOW_MS || '900000', 10),
     rateLimitMax: parseInt(process.env.RATE_LIMIT_MAX || '1000', 10),
-    jwtSecret: jwtSecret || 'dev-secret',
+    jwtSecret: jwtSecret((msg) => logger.warn(msg)),
   };
 
   const app = createGateway(config);
